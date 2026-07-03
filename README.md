@@ -1,84 +1,81 @@
 # Football Tracking System 🎯
 
-A computer vision pipeline that transforms football broadcast footage into 2D tactical visualizations using object detection and player tracking.
-
-## Overview
-
-This system takes a football video clip and produces a side-by-side output showing the original footage alongside a clean 2D top-down representation of the pitch with all detected players and the ball.
+Computer Vision Pipeline zur automatischen Erkennung und Verfolgung von Fußballspielern in Videoaufnahmen — mit moderner 2D Spielfeld-Visualisierung.
 
 ```
-Input:  Football video clip (broadcast/tactical camera)
-Output: 2D pitch visualization with team-colored player dots
+Input:  Fußball-Videoaufnahme (Broadcast / Tactical Camera)
+Output: 2D Spielfeld-Visualisierung mit teamfarbigen Spielerpunkten
 ```
 
 ![Pipeline](docs/pipeline.png)
 
 ## Features
 
-- **YOLOv9e Detection** — State-of-the-art object detection trained on football-specific data (ball, goalkeeper, player, referee)
-- **ByteTrack** — Stable player IDs across frames with team assignment locking after 15 frames
-- **Homography Calibration** — Manual pitch point mapping with Hough Transform line detection assistance
-- **K-Means Team Assignment** — Automatic team color clustering with vote-based stabilization
-- **Ball Interpolation** — Smooth ball trajectory even when briefly undetected (up to 20 frames)
-- **EMA Smoothing** — Exponential moving average for stable player positions on the 2D pitch
-- **Modern 2D Rendering** — Glow effects, player traces, and side-by-side output
+- **YOLOv9e Detection** — State-of-the-art Objekterkennung, trainiert auf fußballspezifischen Daten (Ball, Torhüter, Spieler, Schiedsrichter)
+- **ByteTrack** — Stabile Spieler-IDs über mehrere Frames mit Team-Zuordnung nach 15 Frames einfrieren
+- **Homographie-Kalibrierung** — Manuelle Feldpunkt-Markierung mit Hough-Transform Linienerkennungs-Unterstützung
+- **Team-Zuordnung** — Referenzfarben-basierte Zuweisung mit Vote-Stabilisierung über mehrere Frames
+- **Ball-Interpolation** — Glatte Ball-Trajektorie auch bei kurzzeitiger Nicht-Erkennung (bis zu 20 Frames)
+- **EMA Smoothing** — Exponentieller gleitender Durchschnitt für stabile Spielerpositionen auf dem 2D Spielfeld
+- **Kalman-Filter** — Für robuste Ball-Positionsschätzung
+- **Modernes 2D Rendering** — Glow-Effekte, Spieler-Traces und Side-by-Side Ausgabe
 
-## Pipeline
+## Workflow
 
 ```bash
-# Step 1 — Calibrate (once per clip)
+# Schritt 1 — Kalibrieren (einmalig pro Clip)
 python3 tracker/calibrate.py \
-    --clip clips/match.mp4 \
+    --clip clips/spiel.mp4 \
     --model models/football_v3.pt
 
-# Step 2 — Track
+# Schritt 2 — Tracking
 python3 tracker/track.py \
-    --clip clips/match.mp4 \
-    --calibration output/calibration_match.json \
+    --clip clips/spiel.mp4 \
+    --calibration output/calibration_spiel.json \
     --model models/football_v3.pt
 
-# Step 3 — Visualize
+# Schritt 3 — 2D Visualisierung
 python3 visualizer/pitch.py \
-    --tracking output/track_match.json \
-    --clip clips/match.mp4 \
+    --tracking output/track_spiel.json \
+    --clip clips/spiel.mp4 \
     --ema 0.25
 ```
 
-## Calibration Interface
+## Kalibrierungs-Interface
 
-The calibration step opens an interactive interface:
+Das Kalibrierungs-Interface öffnet sich interaktiv in 3 Schritten:
 
-| Step | Action |
-|------|--------|
-| 1 | Mark 8+ field points (video ↔ 2D field) — Hough Transform suggests candidates |
-| 2 | Correct team assignments (click to toggle A↔B) |
-| 3 | Mark sideline objects to ignore (coaches, photographers) |
+| Schritt | Aktion |
+|---------|--------|
+| 1 | Mind. 8 Feldpunkte markieren (Video ↔ 2D Feld) — Hough-Transform schlägt Kandidaten vor |
+| 2 | Team-Zuordnung korrigieren (Klick = Toggle A↔B) |
+| 3 | Trainer/Fotografen markieren zum Ignorieren |
 
-Press `L` to toggle Hough line detection overlay for guidance.
+`L` = Hough-Linien ein/ausblenden als Orientierungshilfe.
 
-## Model
+## Modell
 
-The detection model (`football_v3.pt`) is a **YOLOv9e** trained on the [Football Players Detection dataset](https://universe.roboflow.com/roboflow-jvuqo/football-players-detection-3zvbc) (Roboflow):
+Das Erkennungsmodell (`football_v3.pt`) ist ein **YOLOv9e**, trainiert auf dem [Football Players Detection Dataset](https://universe.roboflow.com/roboflow-jvuqo/football-players-detection-3zvbc) (Roboflow):
 
-| Class | mAP50 |
-|-------|-------|
-| All | 0.888 |
+| Klasse | mAP50 |
+|--------|-------|
+| Gesamt | 0.888 |
 | Ball | 0.636 |
-| Goalkeeper | 0.956 |
-| Player | 0.992 |
-| Referee | 0.967 |
+| Torhüter | 0.956 |
+| Spieler | 0.992 |
+| Schiedsrichter | 0.967 |
 
-Training: 200 epochs, YOLOv9e, imgsz=1280, A100 GPU
+Training: 200 Epochen, YOLOv9e, imgsz=1280, A100 GPU (Google Colab)
 
-## Tech Stack
+## Technologien
 
 ```
-Detection:    YOLOv9e (Ultralytics)
-Tracking:     ByteTrack (Supervision)
-Calibration:  OpenCV Homography + Hough Transform
-Clustering:   scikit-learn K-Means
-Smoothing:    Kalman Filter (Ball) + EMA (Players)
-Visualization: OpenCV
+Detection:      YOLOv9e (Ultralytics)
+Tracking:       ByteTrack (Supervision)
+Kalibrierung:   OpenCV Homographie + Hough Transform
+Clustering:     scikit-learn K-Means
+Smoothing:      Kalman-Filter (Ball) + EMA (Spieler)
+Visualisierung: OpenCV
 ```
 
 ## Installation
@@ -87,37 +84,37 @@ Visualization: OpenCV
 pip install ultralytics supervision opencv-python scikit-learn numpy
 ```
 
-## Project Structure
+## Projektstruktur
 
 ```
 football-tracking/
 ├── tracker/
-│   ├── calibrate.py     # Interactive calibration interface
-│   └── track.py         # Detection + tracking pipeline
+│   ├── calibrate.py     # Interaktives Kalibrierungs-Interface
+│   └── track.py         # Detection + Tracking Pipeline
 ├── visualizer/
-│   └── pitch.py         # 2D pitch rendering
-├── models/
-│   └── football_v3.pt   # YOLOv9e model weights
-├── clips/               # Input video clips
-└── output/              # Calibration JSON + tracking JSON + videos
+│   └── pitch.py         # 2D Spielfeld Rendering
+├── models/              # Modellgewichte (nicht im Repo)
+├── clips/               # Input-Videos (nicht im Repo)
+└── output/              # Kalibrierung + Tracking + Videos
 ```
 
-## Limitations
+## Limitierungen
 
-This is a research/portfolio project with known limitations:
+Dies ist ein Forschungs- und Portfolio-Projekt mit bekannten Einschränkungen:
 
-- **Static camera required** — Homography is computed once; camera pans degrade accuracy
-- **Team colors** — Works best with clearly distinct team colors; similar colors cause misassignment
-- **Occlusion** — Players overlapping are sometimes lost or merged
-- **Ball detection** — Ball in the air or at distance is unreliable (63.6% detection rate)
-- **No Re-ID** — Players that disappear and reappear may get a new ID
+- **Statische Kamera erforderlich** — Homographie wird einmalig berechnet; Kameraschwenks reduzieren die Genauigkeit
+- **Teamfarben** — Funktioniert am besten bei klar unterscheidbaren Trikotfarben
+- **Occlusion** — Sich überlappende Spieler können kurz verloren gehen
+- **Ball-Erkennung** — Ball in der Luft oder bei großer Distanz schwer erkennbar (63.6% Erkennungsrate)
+- **Kein Re-ID** — Spieler die verschwinden und wieder auftauchen erhalten ggf. eine neue ID
 
-Professional tracking systems (Tracab, Second Spectrum) solve these with fixed multi-camera setups and years of R&D.
+Professionelle Tracking-Systeme (Tracab, Second Spectrum) lösen diese Probleme mit fest installierten Multi-Kamera-Setups und jahrelanger Entwicklung.
 
-## Related Projects
+## Verwandte Projekte
 
-- [Football Coaching Analytics](https://github.com/AF0203/football-coaching-analytics) — Tactical profiling and trainer matching system using event data
+- [Football Coaching Analytics](https://github.com/AF0203/football-coaching-analytics) — Taktisches Profiling und Trainer-Matching-System auf Basis von Event-Daten
 
-## Author
+---
 
-Adrian Friedrich — VWL Master Student, University of Freiburg
+**Adrian Friedrich**
+[LinkedIn](https://www.linkedin.com/in/adrian-friedrich-4a318141b/) · [GitHub](https://github.com/AF0203) · Adrianfriedrich12@gmail.com
