@@ -220,3 +220,5 @@ models/
 clips/
 output/
 data/
+._*
+.DS_Store
